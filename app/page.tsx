@@ -272,7 +272,7 @@ export default function Page() {
         <a href="https://github.com/KunalGhadge/SnapMeet" target="_blank" rel="noopener">
           GitHub
         </a>
-        .
+        . <a href="/privacy">Privacy Policy</a>.
       </footer>
     </div>
   );
