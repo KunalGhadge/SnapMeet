@@ -11,11 +11,15 @@ export default function PrivacyPage() {
   return (
     <div
       style={{
-        minHeight: '100vh',
+        height: '100vh',
+        width: '100%',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        WebkitOverflowScrolling: 'touch',
         background: 'radial-gradient(circle at 50% 18%, #161928 0%, #0d0f18 55%, #07080d 100%)',
         color: '#ffffff',
         fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-        padding: '3rem 1.5rem',
+        padding: '3rem 1.5rem 5rem',
       }}
     >
       <div

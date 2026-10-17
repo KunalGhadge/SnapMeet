@@ -4,12 +4,13 @@ import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { Suspense, useState } from 'react';
 import { encodePassphrase, generateRoomId, randomString } from '@/lib/client-utils';
+import { hasAgreedToConsent, markConsentAgreed, TermsConsentModal } from '@/lib/TermsConsentModal';
 import styles from '../styles/Home.module.css';
 
 // Dynamic import with ssr: false for WebGL2 canvas compatibility
 const PixelSnow = dynamic<any>(() => import('@/lib/PixelSnow'), { ssr: false });
 
-function Tabs(props: React.PropsWithChildren<{}>) {
+function Tabs(props: React.PropsWithChildren<{ onRequestCall: (url: string) => void }>) {
   const searchParams = useSearchParams();
   const tabIndex = searchParams?.get('tab') === 'join' ? 1 : 0;
 
@@ -38,25 +39,32 @@ function Tabs(props: React.PropsWithChildren<{}>) {
     );
   });
 
+  const childrenArray = React.Children.toArray(props.children);
+  const activeChild = childrenArray[tabIndex];
+
   return (
     <div className={styles.tabContainer}>
       <div className={styles.tabSelect}>{tabs}</div>
-      {/* @ts-ignore */}
-      {props.children[tabIndex]}
+      {/* Clone active child to pass onRequestCall */}
+      {React.isValidElement(activeChild)
+        ? React.cloneElement(activeChild as React.ReactElement<any>, {
+            onRequestCall: props.onRequestCall,
+          })
+        : null}
     </div>
   );
 }
 
-function StartCallTab(props: { label: string }) {
-  const router = useRouter();
+function StartCallTab(props: { label: string; onRequestCall?: (url: string) => void }) {
   const [e2ee, setE2ee] = useState(false);
   const [sharedPassphrase, setSharedPassphrase] = useState(randomString(64));
 
   const startMeeting = () => {
-    if (e2ee) {
-      router.push(`/rooms/${generateRoomId()}#${encodePassphrase(sharedPassphrase)}`);
-    } else {
-      router.push(`/rooms/${generateRoomId()}`);
+    const target = e2ee
+      ? `/rooms/${generateRoomId()}#${encodePassphrase(sharedPassphrase)}`
+      : `/rooms/${generateRoomId()}`;
+    if (props.onRequestCall) {
+      props.onRequestCall(target);
     }
   };
 
@@ -100,8 +108,7 @@ function StartCallTab(props: { label: string }) {
   );
 }
 
-function JoinCallTab(props: { label: string }) {
-  const router = useRouter();
+function JoinCallTab(props: { label: string; onRequestCall?: (url: string) => void }) {
   const [roomInput, setRoomInput] = useState('');
   const [e2ee, setE2ee] = useState(false);
   const [sharedPassphrase, setSharedPassphrase] = useState('');
@@ -125,10 +132,12 @@ function JoinCallTab(props: { label: string }) {
       }
     }
 
-    if (e2ee && sharedPassphrase) {
-      router.push(`/rooms/${encodeURIComponent(cleaned)}#${encodePassphrase(sharedPassphrase)}`);
-    } else {
-      router.push(`/rooms/${encodeURIComponent(cleaned)}`);
+    const target = e2ee && sharedPassphrase
+      ? `/rooms/${encodeURIComponent(cleaned)}#${encodePassphrase(sharedPassphrase)}`
+      : `/rooms/${encodeURIComponent(cleaned)}`;
+
+    if (props.onRequestCall) {
+      props.onRequestCall(target);
     }
   };
 
@@ -185,6 +194,27 @@ function JoinCallTab(props: { label: string }) {
 }
 
 export default function Page() {
+  const router = useRouter();
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [pendingTargetUrl, setPendingTargetUrl] = useState<string | null>(null);
+
+  const handleRequestCall = (targetUrl: string) => {
+    if (hasAgreedToConsent()) {
+      router.push(targetUrl);
+    } else {
+      setPendingTargetUrl(targetUrl);
+      setShowConsentModal(true);
+    }
+  };
+
+  const handleAcceptConsent = () => {
+    markConsentAgreed();
+    setShowConsentModal(false);
+    if (pendingTargetUrl) {
+      router.push(pendingTargetUrl);
+    }
+  };
+
   return (
     <div className={styles.pageWrapper}>
       {/* Interactive Pixel Snow Canvas in the Background */}
@@ -234,7 +264,7 @@ export default function Page() {
         </div>
 
         <Suspense fallback={<div style={{ color: 'rgba(255,255,255,0.6)' }}>Loading...</div>}>
-          <Tabs>
+          <Tabs onRequestCall={handleRequestCall}>
             <StartCallTab label="Start Call" />
             <JoinCallTab label="Join Call" />
           </Tabs>
@@ -272,8 +302,15 @@ export default function Page() {
         <a href="https://github.com/KunalGhadge/SnapMeet" target="_blank" rel="noopener">
           GitHub
         </a>
-        . <a href="/privacy">Privacy Policy</a>.
+        . <a href="/privacy">Privacy Policy</a> | <a href="/terms">Terms &amp; Conditions</a>.
       </footer>
+
+      {/* First-time User Privacy & Terms Consent Modal */}
+      <TermsConsentModal
+        isOpen={showConsentModal}
+        onAccept={handleAcceptConsent}
+        onCancel={() => setShowConsentModal(false)}
+      />
     </div>
   );
 }

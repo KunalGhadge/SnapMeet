@@ -30,6 +30,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useSetupE2EE } from '@/lib/useSetupE2EE';
 import { useLowCPUOptimizer } from '@/lib/usePerfomanceOptimiser';
+import { hasAgreedToConsent, TermsConsentModal } from '@/lib/TermsConsentModal';
 
 const CONN_DETAILS_ENDPOINT =
   process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT ?? '/api/connection-details';
@@ -56,6 +57,8 @@ export function PageClientImpl(props: {
   const [connectionDetails, setConnectionDetails] = React.useState<ConnectionDetails | undefined>(
     undefined,
   );
+  const [showConsentModal, setShowConsentModal] = React.useState(false);
+  const [pendingChoices, setPendingChoices] = React.useState<LocalUserChoices | null>(null);
 
   // DNS and TLS state is cached by the browser, not the Room, so warming up on a separate Room
   // speeds up the conference Room's connect.
@@ -65,7 +68,7 @@ export function PageClientImpl(props: {
     }
   }, [props.serverUrl]);
 
-  const handlePreJoinSubmit = React.useCallback(async (values: LocalUserChoices) => {
+  const proceedJoin = React.useCallback(async (values: LocalUserChoices) => {
     setPreJoinChoices(values);
     const url = new URL(CONN_DETAILS_ENDPOINT, window.location.origin);
     url.searchParams.append('roomName', props.roomName);
@@ -76,7 +79,24 @@ export function PageClientImpl(props: {
     const connectionDetailsResp = await fetch(url.toString());
     const connectionDetailsData = await connectionDetailsResp.json();
     setConnectionDetails(connectionDetailsData);
-  }, []);
+  }, [props.roomName, props.region]);
+
+  const handlePreJoinSubmit = React.useCallback(async (values: LocalUserChoices) => {
+    if (hasAgreedToConsent()) {
+      await proceedJoin(values);
+    } else {
+      setPendingChoices(values);
+      setShowConsentModal(true);
+    }
+  }, [proceedJoin]);
+
+  const handleConsentAccepted = React.useCallback(async () => {
+    setShowConsentModal(false);
+    if (pendingChoices) {
+      await proceedJoin(pendingChoices);
+    }
+  }, [pendingChoices, proceedJoin]);
+
   const handlePreJoinError = React.useCallback((e: any) => console.error(e), []);
 
   return (
@@ -100,6 +120,11 @@ export function PageClientImpl(props: {
           }}
         />
       )}
+      <TermsConsentModal
+        isOpen={showConsentModal}
+        onAccept={handleConsentAccepted}
+        onCancel={() => setShowConsentModal(false)}
+      />
     </main>
   );
 }
