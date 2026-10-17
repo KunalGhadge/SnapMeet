@@ -203,55 +203,6 @@ function VideoConferenceComponent(props: {
     }
   }, [e2eeEnabled, room, e2eePassphrase]);
 
-  const connectOptions = React.useMemo((): RoomConnectOptions => {
-    return {
-      autoSubscribe: true,
-    };
-  }, []);
-
-  React.useEffect(() => {
-    room.on(RoomEvent.Disconnected, handleOnLeave);
-    room.on(RoomEvent.EncryptionError, handleEncryptionError);
-    room.on(RoomEvent.MediaDevicesError, handleError);
-
-    if (e2eeSetupComplete) {
-      room
-        .connect(
-          props.connectionDetails.serverUrl,
-          props.connectionDetails.participantToken,
-          connectOptions,
-        )
-        .catch((error) => {
-          handleError(error);
-        });
-      if (props.userChoices.videoEnabled) {
-        room.localParticipant.setCameraEnabled(true).catch((error) => {
-          handleError(error);
-        });
-      }
-      if (props.userChoices.audioEnabled) {
-        room.localParticipant
-          .setMicrophoneEnabled(true, {
-            autoGainControl: true,
-            echoCancellation: true,
-            noiseSuppression: true,
-            channelCount: 1,
-            deviceId: props.userChoices.audioDeviceId ?? undefined,
-          })
-          .catch((error) => {
-            handleError(error);
-          });
-      }
-    }
-    return () => {
-      room.off(RoomEvent.Disconnected, handleOnLeave);
-      room.off(RoomEvent.EncryptionError, handleEncryptionError);
-      room.off(RoomEvent.MediaDevicesError, handleError);
-    };
-  }, [e2eeSetupComplete, room, props.connectionDetails, props.userChoices]);
-
-  const lowPowerMode = useLowCPUOptimizer(room);
-
   const router = useRouter();
   const handleOnLeave = React.useCallback(() => router.push('/'), [router]);
   const handleError = React.useCallback((error: Error) => {
@@ -264,6 +215,70 @@ function VideoConferenceComponent(props: {
       `Encountered an unexpected encryption error, check the console logs for details: ${error.message}`,
     );
   }, []);
+
+  const connectOptions = React.useMemo((): RoomConnectOptions => {
+    return {
+      autoSubscribe: true,
+    };
+  }, []);
+
+  const connectAttemptedRef = React.useRef(false);
+
+  React.useEffect(() => {
+    room.on(RoomEvent.Disconnected, handleOnLeave);
+    room.on(RoomEvent.EncryptionError, handleEncryptionError);
+    room.on(RoomEvent.MediaDevicesError, handleError);
+
+    if (e2eeSetupComplete && !connectAttemptedRef.current) {
+      connectAttemptedRef.current = true;
+      room
+        .connect(
+          props.connectionDetails.serverUrl,
+          props.connectionDetails.participantToken,
+          connectOptions,
+        )
+        .then(() => {
+          if (props.userChoices.videoEnabled) {
+            room.localParticipant.setCameraEnabled(true).catch((error) => {
+              handleError(error);
+            });
+          }
+          if (props.userChoices.audioEnabled) {
+            room.localParticipant
+              .setMicrophoneEnabled(true, {
+                autoGainControl: true,
+                echoCancellation: true,
+                noiseSuppression: true,
+                channelCount: 1,
+                deviceId: props.userChoices.audioDeviceId ?? undefined,
+              })
+              .catch((error) => {
+                handleError(error);
+              });
+          }
+        })
+        .catch((error) => {
+          connectAttemptedRef.current = false;
+          handleError(error);
+        });
+    }
+
+    return () => {
+      try {
+        room.localParticipant?.trackPublications.forEach((pub) => {
+          try {
+            pub.track?.stop();
+          } catch {}
+        });
+        room.disconnect();
+      } catch {}
+      room.off(RoomEvent.Disconnected, handleOnLeave);
+      room.off(RoomEvent.EncryptionError, handleEncryptionError);
+      room.off(RoomEvent.MediaDevicesError, handleError);
+    };
+  }, [e2eeSetupComplete, room, props.connectionDetails, props.userChoices, connectOptions, handleEncryptionError, handleError, handleOnLeave]);
+
+  const lowPowerMode = useLowCPUOptimizer(room);
 
   React.useEffect(() => {
     if (lowPowerMode) {

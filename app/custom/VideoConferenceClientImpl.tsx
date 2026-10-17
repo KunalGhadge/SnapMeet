@@ -76,15 +76,33 @@ export function VideoConferenceClientImpl(props: {
     }
   }, [e2eeEnabled, e2eePassphrase, keyProvider, room, setE2eeSetupComplete]);
 
+  const connectAttemptedRef = useState(false);
+
   useEffect(() => {
-    if (e2eeSetupComplete) {
-      room.connect(props.liveKitUrl, props.token, connectOptions).catch((error) => {
-        console.error(error);
-      });
-      room.localParticipant.enableCameraAndMicrophone().catch((error) => {
-        console.error(error);
-      });
+    if (e2eeSetupComplete && !connectAttemptedRef[0]) {
+      connectAttemptedRef[1](true);
+      room
+        .connect(props.liveKitUrl, props.token, connectOptions)
+        .then(() => {
+          room.localParticipant.enableCameraAndMicrophone().catch((error) => {
+            console.error(error);
+          });
+        })
+        .catch((error) => {
+          console.error(error);
+        });
     }
+
+    return () => {
+      try {
+        room.localParticipant?.trackPublications.forEach((pub) => {
+          try {
+            pub.track?.stop();
+          } catch {}
+        });
+        room.disconnect();
+      } catch {}
+    };
   }, [room, props.liveKitUrl, props.token, connectOptions, e2eeSetupComplete]);
 
   useLowCPUOptimizer(room);

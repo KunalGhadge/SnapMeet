@@ -80,6 +80,7 @@ export async function getOrCreateCameraKitSession(): Promise<CameraKitSession> {
         const session = await cameraKit.createSession({
           renderWhileTabHidden: true,
         });
+        session.mute(); // Mute all sounds from CameraKit session to prevent sound bleed and audio feedback
 
         session.events.addEventListener('error', ({ detail }) => {
           console.warn('[CameraKit Session Event Error]:', detail?.error?.name, detail);

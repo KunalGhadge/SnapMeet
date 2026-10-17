@@ -227,6 +227,7 @@ export function RemoteFunnyVideoTile({
         trackRef={trackRef}
         ref={handleVideoRef}
         manageSubscription={false}
+        muted={true}
         style={{
           width: '100%',
           height: '100%',

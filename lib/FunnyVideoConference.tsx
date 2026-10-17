@@ -455,8 +455,8 @@ export function FunnyVideoConference({
 
   return (
     <div className="lk-video-conference funny-video-conference" style={{ position: 'relative' }} {...htmlProps}>
-      {/* 1. Ensure remote audio plays seamlessly */}
-      <RoomAudioRenderer />
+      {/* 1. Ensure remote audio plays seamlessly without driving speaker-to-mic feedback loops */}
+      <RoomAudioRenderer volume={0.75} />
 
       {/* 2. Connection State Toast */}
       <ConnectionStateToast />
