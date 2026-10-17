@@ -33,9 +33,16 @@ export function VideoConferenceClientImpl(props: {
   const roomOptions = useMemo((): RoomOptions => {
     return {
       publishDefaults: {
+        dtx: true,
         videoSimulcastLayers: [VideoPresets.h540, VideoPresets.h216],
-        red: !e2eeEnabled,
+        red: false,
         videoCodec: props.codec,
+      },
+      audioCaptureDefaults: {
+        autoGainControl: true,
+        echoCancellation: true,
+        noiseSuppression: true,
+        channelCount: 1,
       },
       adaptiveStream: false,
       dynacast: false,
@@ -47,7 +54,7 @@ export function VideoConferenceClientImpl(props: {
         : undefined,
       singlePeerConnection: props.singlePeerConnection,
     };
-  }, [e2eeEnabled, props.codec, keyProvider, worker]);
+  }, [e2eeEnabled, props.codec, keyProvider, worker, props.singlePeerConnection]);
 
   const room = useMemo(() => new Room(roomOptions), [roomOptions]);
 

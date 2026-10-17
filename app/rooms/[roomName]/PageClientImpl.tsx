@@ -159,13 +159,17 @@ function VideoConferenceComponent(props: {
       videoSimulcastLayers: props.options.hq
         ? [VideoPresets.h1080, VideoPresets.h720]
         : [VideoPresets.h540, VideoPresets.h216],
-      red: !e2eeEnabled,
+      red: false, // Explicitly disable RED (RFC 2198). RED causes severe buzzing/static noise and payload mismatch in Chromium WebRTC
       videoCodec,
     };
     return {
       videoCaptureDefaults: videoCaptureDefaults,
       publishDefaults: publishDefaults,
       audioCaptureDefaults: {
+        autoGainControl: true,
+        echoCancellation: true,
+        noiseSuppression: true,
+        channelCount: 1, // Mono audio capture prevents stereo phase cancellation and acoustic feedback loops
         deviceId: props.userChoices.audioDeviceId ?? undefined,
       },
       adaptiveStream: true,
@@ -226,9 +230,17 @@ function VideoConferenceComponent(props: {
         });
       }
       if (props.userChoices.audioEnabled) {
-        room.localParticipant.setMicrophoneEnabled(true).catch((error) => {
-          handleError(error);
-        });
+        room.localParticipant
+          .setMicrophoneEnabled(true, {
+            autoGainControl: true,
+            echoCancellation: true,
+            noiseSuppression: true,
+            channelCount: 1,
+            deviceId: props.userChoices.audioDeviceId ?? undefined,
+          })
+          .catch((error) => {
+            handleError(error);
+          });
       }
     }
     return () => {

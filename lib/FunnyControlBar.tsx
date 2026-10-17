@@ -80,6 +80,12 @@ export function FunnyControlBar({
           source={Track.Source.Microphone}
           showIcon={true}
           onChange={microphoneOnChange}
+          captureOptions={{
+            autoGainControl: true,
+            echoCancellation: true,
+            noiseSuppression: true,
+            channelCount: 1,
+          }}
         >
           {showText && 'Microphone'}
         </TrackToggle>
@@ -115,7 +121,7 @@ export function FunnyControlBar({
       {/* 3. Screen Share */}
       <TrackToggle
         source={Track.Source.ScreenShare}
-        captureOptions={{ audio: true, selfBrowserSurface: 'include' }}
+        captureOptions={{ audio: true, selfBrowserSurface: 'exclude' }}
         showIcon={true}
       >
         {showText && 'Share screen'}
