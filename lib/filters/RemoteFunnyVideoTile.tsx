@@ -2,60 +2,35 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { TrackReference, VideoTrack } from '@livekit/components-react';
-import { FaceDeformationRenderer, FilterType, FaceCoordinates } from './faceDeformationRenderer';
-import { FaceTracker } from './faceTracker';
-import { ARFaceOverlay } from './ARFaceOverlay';
+import {
+  isCameraKitConfigured,
+  applySnapLensPipeline,
+  formatLensDisplayName,
+  updateCameraKitRenderSize,
+} from '../camerakit/cameraKitService';
 
 interface RemoteFunnyVideoTileProps {
   trackRef: TrackReference;
-  activeFilter?: FilterType;
+  activeFilter?: string; // Snap Lens ID or 'none'
   filterIntensity?: number;
-  onFilterChange?: (filter: FilterType) => void;
+  onFilterChange?: (filter: string) => void;
 }
-
-const AR_FILTERS: FilterType[] = [
-  'dog_face',
-  'cat_face',
-  'thug_life',
-  'disguise',
-  'devil_horns',
-  'angel_halo',
-];
-
-const WARP_FILTERS: FilterType[] = [
-  'big_head',
-  'tiny_face',
-  'alien',
-  'mega_chin',
-  'swirl',
-  'jelly',
-  'cyclops',
-  'random',
-];
 
 export function RemoteFunnyVideoTile({
   trackRef,
   activeFilter = 'none',
-  filterIntensity = 1.0,
 }: RemoteFunnyVideoTileProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const rendererRef = useRef<FaceDeformationRenderer | null>(null);
-  const trackerRef = useRef<FaceTracker | null>(null);
-  const latestFaceCoordsRef = useRef<FaceCoordinates | null>(null);
-  const animFrameIdRef = useRef<number | null>(null);
+  const lensContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const [faceCoords, setFaceCoords] = useState<FaceCoordinates | null>(null);
-  const [isWarpReady, setIsWarpReady] = useState(false);
-  const successfulWarpFramesRef = useRef(0);
+  const [isLensApplied, setIsLensApplied] = useState(false);
+  const [activeLensName, setActiveLensName] = useState<string | null>(null);
 
   const isLocal = trackRef.participant?.isLocal ?? false;
+  const isNone = !activeFilter || activeFilter === 'none';
 
-  const isNone = activeFilter === 'none';
-  const isAR = AR_FILTERS.includes(activeFilter);
-  const isWarp = WARP_FILTERS.includes(activeFilter);
-
-  // Auto-resume video playing so WebRTC stream never freezes in background/split windows
+  // Auto-resume video playback so WebRTC stream never pauses in background
   const handleVideoRef = useCallback((node: HTMLVideoElement | null) => {
     videoRef.current = node;
     if (node) {
@@ -73,11 +48,12 @@ export function RemoteFunnyVideoTile({
       node.addEventListener('suspend', resumePlayback);
       node.addEventListener('stalled', resumePlayback);
       node.addEventListener('waiting', resumePlayback);
+      node.addEventListener('loadedmetadata', resumePlayback);
       resumePlayback();
     }
   }, []);
 
-  // Ensure remote track publication is always subscribed across all participants
+  // Ensure remote track publication is always subscribed
   useEffect(() => {
     if (trackRef.publication && 'setSubscribed' in trackRef.publication) {
       try {
@@ -88,7 +64,7 @@ export function RemoteFunnyVideoTile({
     }
   }, [trackRef.publication]);
 
-  // Window/tab focus watchdog: ensure video plays immediately on focus/visibility change
+  // Window/tab focus watchdog: resume video on focus/visibility change
   useEffect(() => {
     const handleVisibility = () => {
       const v = videoRef.current;
@@ -104,143 +80,138 @@ export function RemoteFunnyVideoTile({
     };
   }, []);
 
-  // 1. Face Tracker: Active ONLY when an AR or Warp filter is chosen
+  // Listen for CameraKit runtime lens errors and safely fall back to native video
   useEffect(() => {
-    if (isNone) {
-      if (trackerRef.current) {
-        trackerRef.current.destroy();
-        trackerRef.current = null;
+    const handleLensError = () => {
+      console.warn('[RemoteFunnyVideoTile] Runtime lens error received, reverting to native stream.');
+      const container = lensContainerRef.current;
+      if (container) {
+        container.innerHTML = '';
       }
-      latestFaceCoordsRef.current = null;
-      setFaceCoords(null);
-      return;
-    }
+      setIsLensApplied(false);
+      setActiveLensName(null);
+    };
 
-    let tracker: FaceTracker | null = null;
-    let timer: NodeJS.Timeout | null = null;
-    let cancelled = false;
+    window.addEventListener('camerakit:lens-execution-error', handleLensError);
+    return () => {
+      window.removeEventListener('camerakit:lens-execution-error', handleLensError);
+    };
+  }, []);
 
-    const initTracker = () => {
-      if (cancelled) return;
-      const video = videoRef.current;
-      if (!video) {
-        timer = setTimeout(initTracker, 150);
+  // ResizeObserver: Dynamically synchronize CameraKit internal render resolution
+  // with the video tile container to eliminate zoom cropping on layout/window changes
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') return;
+
+    let resizeTimer: any = null;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0 && isLensApplied) {
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(() => {
+            updateCameraKitRenderSize(width, height);
+          }, 150);
+        }
+      }
+    });
+
+    observer.observe(container);
+    return () => {
+      clearTimeout(resizeTimer);
+      observer.disconnect();
+    };
+  }, [isLensApplied]);
+
+  // Snap Camera Kit: apply lens pipeline to the active participant video
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function updatePipeline() {
+      if (!isCameraKitConfigured() || typeof window === 'undefined') {
         return;
       }
 
-      tracker = new FaceTracker(video, (coords) => {
-        latestFaceCoordsRef.current = coords;
-        setFaceCoords(coords);
+      // If activeFilter is 'none', remove lens from session and show native stream
+      if (isNone) {
+        await applySnapLensPipeline({ lensId: 'none' });
+        if (!isCancelled) {
+          const container = lensContainerRef.current;
+          if (container) {
+            container.innerHTML = '';
+          }
+          setIsLensApplied(false);
+          setActiveLensName(null);
+        }
+        return;
+      }
+
+      const track = trackRef.publication?.track;
+      const mediaStreamTrack = track?.mediaStreamTrack;
+      const videoElement = videoRef.current;
+      const container = containerRef.current;
+
+      const targetWidth = container?.clientWidth || 0;
+      const targetHeight = container?.clientHeight || 0;
+
+      const result = await applySnapLensPipeline({
+        lensId: activeFilter,
+        mediaStreamTrack,
+        videoElement,
+        targetWidth,
+        targetHeight,
       });
-      trackerRef.current = tracker;
-    };
 
-    timer = setTimeout(initTracker, 60);
+      if (isCancelled) return;
 
-    return () => {
-      cancelled = true;
-      if (timer) clearTimeout(timer);
-      if (tracker) {
-        tracker.destroy();
-        trackerRef.current = null;
-      }
-    };
-  }, [isNone, trackRef]);
+      if (result.success && result.canvas) {
+        const lensContainer = lensContainerRef.current;
+        if (lensContainer) {
+          result.canvas.style.position = 'absolute';
+          result.canvas.style.top = '0';
+          result.canvas.style.left = '0';
+          result.canvas.style.width = '100%';
+          result.canvas.style.height = '100%';
+          result.canvas.style.objectFit = 'cover';
+          result.canvas.style.objectPosition = 'center';
+          result.canvas.style.pointerEvents = 'none';
+          result.canvas.style.zIndex = '2';
+          result.canvas.style.transform = 'none';
 
-  // 2. WebGL Deformation Renderer: ONLY active when a Warp filter is chosen
-  useEffect(() => {
-    if (!isWarp) {
-      if (animFrameIdRef.current !== null) {
-        cancelAnimationFrame(animFrameIdRef.current);
-        animFrameIdRef.current = null;
+          if (result.canvas.parentElement !== lensContainer) {
+            lensContainer.innerHTML = '';
+            lensContainer.appendChild(result.canvas);
+          }
+        }
+        setIsLensApplied(true);
+        setActiveLensName(formatLensDisplayName(result.lensName));
+      } else {
+        setIsLensApplied(false);
+        setActiveLensName(null);
       }
-      if (rendererRef.current) {
-        rendererRef.current.destroy();
-        rendererRef.current = null;
-      }
-      successfulWarpFramesRef.current = 0;
-      setIsWarpReady(false);
-      return;
     }
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const renderer = new FaceDeformationRenderer(canvas);
-    rendererRef.current = renderer;
-
-    let cancelled = false;
-    let startTime = performance.now();
-
-    const renderStep = () => {
-      if (cancelled) return;
-
-      const video = videoRef.current;
-      const curRenderer = rendererRef.current;
-
-      if (
-        video &&
-        curRenderer &&
-        video.readyState >= 2 &&
-        video.videoWidth > 20 &&
-        video.videoHeight > 20 &&
-        !video.paused &&
-        !video.ended
-      ) {
-        const elapsed = (performance.now() - startTime) / 1000.0;
-        const rendered = curRenderer.renderFrame(
-          video,
-          activeFilter,
-          latestFaceCoordsRef.current,
-          elapsed,
-          filterIntensity,
-        );
-
-        if (rendered) {
-          successfulWarpFramesRef.current++;
-          if (successfulWarpFramesRef.current >= 2) {
-            setIsWarpReady(true);
-          }
-        } else {
-          successfulWarpFramesRef.current = 0;
-          setIsWarpReady(false);
-        }
-      } else {
-        if (video && video.paused && !video.ended) {
-          video.play().catch(() => {});
-        }
-        successfulWarpFramesRef.current = 0;
-        setIsWarpReady(false);
-      }
-    };
-
-    // Continuous requestAnimationFrame loop: Never dies on frame pauses or network jitter
-    const renderLoop = () => {
-      if (cancelled) return;
-      renderStep();
-      animFrameIdRef.current = requestAnimationFrame(renderLoop);
-    };
-
-    animFrameIdRef.current = requestAnimationFrame(renderLoop);
+    updatePipeline();
 
     return () => {
-      cancelled = true;
-      if (animFrameIdRef.current !== null) {
-        cancelAnimationFrame(animFrameIdRef.current);
-        animFrameIdRef.current = null;
-      }
-      renderer.destroy();
-      rendererRef.current = null;
-      successfulWarpFramesRef.current = 0;
-      setIsWarpReady(false);
+      isCancelled = true;
     };
-  }, [isWarp, activeFilter, filterIntensity]);
+  }, [activeFilter, isNone, isLocal, trackRef.publication?.track]);
 
-  // Show WebGL canvas ONLY for Warp filters when ready; otherwise show native VideoTrack
-  const showCanvas = isWarp && isWarpReady;
+  // Clean up DOM canvas on unmount
+  useEffect(() => {
+    const container = lensContainerRef.current;
+    return () => {
+      if (container) {
+        container.innerHTML = '';
+      }
+    };
+  }, []);
 
   return (
     <div
+      ref={containerRef}
       className="funny-video-container"
       style={{
         position: 'relative',
@@ -268,36 +239,50 @@ export function RemoteFunnyVideoTile({
         }}
       />
 
-      {/* 2. WebGL Processed Video Canvas (active ONLY for facial pixel warps) */}
-      {isWarp && (
-        <canvas
-          ref={canvasRef}
+      {/* 2. Official Snap Camera Kit Render Output Container */}
+      <div
+        ref={lensContainerRef}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          display: isLensApplied ? 'block' : 'none',
+          zIndex: 2,
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* 3. Lens Active Indicator Badge */}
+      {isLensApplied && activeLensName && (
+        <div
           style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            display: showCanvas ? 'block' : 'none',
-            // opacity 0.999 prevents Chromium compositor from occluding/suspending underlying video element!
-            opacity: showCanvas ? 0.999 : 0,
-            zIndex: 2,
+            top: '8px',
+            left: '8px',
+            zIndex: 5,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '3px 9px',
+            background: 'rgba(0, 0, 0, 0.72)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255, 252, 0, 0.35)',
+            borderRadius: '9999px',
+            fontSize: '11px',
+            fontWeight: 600,
+            color: '#FFFC00',
             pointerEvents: 'none',
-            transition: 'opacity 0.15s ease-in-out',
-            transform: isLocal ? 'rotateY(180deg)' : 'none',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
           }}
-        />
-      )}
-
-      {/* 3. Snapchat AR Props Layer (Puppy Dog, Kitty Cat, Thug Life, Disguise, Devil, Angel) */}
-      {isAR && (
-        <ARFaceOverlay
-          filter={activeFilter}
-          faceCoords={faceCoords}
-          intensity={filterIntensity}
-          isLocal={isLocal}
-        />
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          <span>{activeLensName}</span>
+        </div>
       )}
     </div>
   );

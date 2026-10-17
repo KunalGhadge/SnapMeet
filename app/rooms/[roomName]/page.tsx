@@ -1,7 +1,20 @@
 import * as React from 'react';
+import type { Metadata } from 'next';
 import { PageClientImpl } from './PageClientImpl';
 import { isVideoCodec } from '@/lib/types';
 import { getLiveKitURL } from '@/lib/getLiveKitURL';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ roomName: string }>;
+}): Promise<Metadata> {
+  const { roomName } = await params;
+  return {
+    title: `Snap Meet | ${roomName}`,
+    description: `Join room ${roomName} on Snap Meet with real-time AR face effects.`,
+  };
+}
 
 export default async function Page({
   params,
@@ -21,7 +34,7 @@ export default async function Page({
   const codec =
     typeof _searchParams.codec === 'string' && isVideoCodec(_searchParams.codec)
       ? _searchParams.codec
-      : 'vp9';
+      : 'vp8';
   const hq = _searchParams.hq === 'true' ? true : false;
   const singlePC = _searchParams.singlePC !== 'false';
   const serverUrl = process.env.LIVEKIT_URL

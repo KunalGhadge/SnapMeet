@@ -3,6 +3,7 @@ import '@livekit/components-styles';
 import '@livekit/components-styles/prefabs';
 import type { Metadata, Viewport } from 'next';
 import { Toaster } from 'react-hot-toast';
+import { ClientBootstrapper } from '@/components/ClientBootstrapper';
 
 export const metadata: Metadata = {
   title: {
@@ -19,17 +20,16 @@ export const metadata: Metadata = {
     siteName: 'Snap Meet',
   },
   icons: {
-    icon: {
-      rel: 'icon',
-      url: '/favicon.ico',
-    },
+    icon: [
+      { rel: 'icon', url: '/favicon.svg', type: 'image/svg+xml' },
+      { rel: 'icon', url: '/favicon.ico', sizes: 'any' },
+    ],
     apple: [
       {
         rel: 'apple-touch-icon',
-        url: '/images/livekit-apple-touch.png',
+        url: '/images/snap-meet-icon.svg',
         sizes: '180x180',
       },
-      { rel: 'mask-icon', url: '/images/livekit-safari-pinned-tab.svg', color: '#070707' },
     ],
   },
 };
@@ -42,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body data-lk-theme="default">
+        <ClientBootstrapper />
         <Toaster />
         {children}
       </body>

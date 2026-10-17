@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#181b24" />
+      <stop offset="100%" stop-color="#0a0a0d" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF7565" />
+      <stop offset="100%" stop-color="#FF513E" />
+    </linearGradient>
+  </defs>
+  <!-- Background squircle -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#bgGrad)" stroke="url(#accentGrad)" stroke-width="2" />
+  <!-- Camera body -->
+  <rect x="14" y="22" width="36" height="26" rx="7" fill="none" stroke="#ffffff" stroke-width="2.5" />
+  <path d="M23 22L26 17H38L41 22" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Camera lens -->
+  <circle cx="32" cy="35" r="7.5" fill="none" stroke="url(#accentGrad)" stroke-width="2.5" />
+  <!-- Flash light dot -->
+  <circle cx="43" cy="27" r="1.5" fill="#ffffff" />
+  <!-- Snap yellow AR sparkle -->
+  <path d="M49 10L50.5 5L52 10L57 11.5L52 13L50.5 18L49 13L44 11.5Z" fill="#FFFC00" />
+</svg>

@@ -26,10 +26,14 @@ import {
   WidgetState,
 } from '@livekit/components-react';
 import { RoomEvent, Track } from 'livekit-client';
-import { FilterType } from './filters/faceDeformationRenderer';
 import { FilterPanel, FilterTarget } from './filters/FilterPanel';
 import { RemoteFunnyVideoTile } from './filters/RemoteFunnyVideoTile';
 import { FunnyControlBar } from './FunnyControlBar';
+import {
+  getLoadedLensById,
+  teardownCameraKit,
+  formatLensDisplayName,
+} from './camerakit/cameraKitService';
 
 export interface FunnyVideoConferenceProps {
   chatMessageFormatter?: any;
@@ -38,62 +42,30 @@ export interface FunnyVideoConferenceProps {
   SettingsComponent?: React.ComponentType;
 }
 
-const FILTER_LABELS: Record<FilterType, string> = {
-  none: 'None',
-  dog_face: 'Puppy Dog',
-  cat_face: 'Cute Kitty',
-  thug_life: 'Thug Life',
-  disguise: 'Comedy Disguise',
-  devil_horns: 'Neon Devil',
-  angel_halo: 'Angel Halo',
-  big_head: 'Big Head',
-  tiny_face: 'Tiny Face',
-  alien: 'Alien Cranium',
-  mega_chin: 'Mega Chin',
-  swirl: 'Carnival Swirl',
-  jelly: 'Jelly Wobble',
-  cyclops: 'Cyclops',
-  random: 'Random Surprise',
-};
-
-const FILTER_ICONS: Record<FilterType, string> = {
-  none: '🚫',
-  dog_face: '🐶',
-  cat_face: '🐱',
-  thug_life: '🕶️',
-  disguise: '🥸',
-  devil_horns: '😈',
-  angel_halo: '😇',
-  big_head: '🎈',
-  tiny_face: '🤏',
-  alien: '👽',
-  mega_chin: '🗿',
-  swirl: '🌀',
-  jelly: '🍮',
-  cyclops: '👁️',
-  random: '🎲',
-};
-
-const RANDOM_POOL: FilterType[] = [
-  'dog_face',
-  'cat_face',
-  'thug_life',
-  'disguise',
-  'devil_horns',
-  'angel_halo',
-  'big_head',
-  'tiny_face',
-  'alien',
-  'mega_chin',
-  'swirl',
-  'jelly',
-];
+function getFilterLabel(filterId: string): string {
+  if (!filterId || filterId === 'none') return 'Normal';
+  const lens = getLoadedLensById(filterId);
+  return formatLensDisplayName(lens?.name || 'Blue Bear Expressions');
+}
 
 interface IncomingToast {
   id: number;
   message: string;
-  icon: string;
+  icon: React.ReactNode;
 }
+
+const SNAP_SPARKLE_ICON = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFC00" stroke="#FFFC00" strokeWidth="1">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
+const SNAP_RESET_ICON = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+    <path d="M3 3v5h5" />
+  </svg>
+);
 
 interface FunnyGridLayoutProps {
   tracks: TrackReferenceOrPlaceholder[];
@@ -124,7 +96,7 @@ function FunnyParticipantTile({
   filtersByParticipant,
   defaultIntensity,
 }: {
-  filtersByParticipant: Record<string, { filter: FilterType; intensity: number }>;
+  filtersByParticipant: Record<string, { filter: string; intensity: number }>;
   defaultIntensity: number;
   onOpenFilterPanelForParticipant?: (identity: string) => void;
 }) {
@@ -161,7 +133,10 @@ function FunnyParticipantTile({
             <ParticipantName />
           </div>
 
-          <ConnectionQualityIndicator className="lk-participant-metadata-item" />
+          <ConnectionQualityIndicator
+            participant={trackRef.participant}
+            className="lk-participant-metadata-item"
+          />
         </div>
         <FocusToggle trackRef={trackRef} />
       </ParticipantTile>
@@ -197,7 +172,7 @@ export function FunnyVideoConference({
 
   // Per-participant filter states: identity -> { filter, intensity }
   const [filtersByParticipant, setFiltersByParticipant] = useState<
-    Record<string, { filter: FilterType; intensity: number }>
+    Record<string, { filter: string; intensity: number }>
   >({});
   const [filterIntensity, setFilterIntensity] = useState<number>(1.0);
   const [target, setTarget] = useState<FilterTarget>('friend');
@@ -212,11 +187,18 @@ export function FunnyVideoConference({
     }
   }, [remoteParticipants, target]);
 
+  // Clean up CameraKit resources when leaving conference
+  useEffect(() => {
+    return () => {
+      teardownCameraKit().catch(() => {});
+    };
+  }, []);
+
   // Incoming notification toast when someone applies an effect
   const [toast, setToast] = useState<IncomingToast | null>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const showToast = useCallback((message: string, icon: string) => {
+  const showToast = useCallback((message: string, icon: React.ReactNode) => {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     setToast({ id: Date.now(), message, icon });
     toastTimeoutRef.current = setTimeout(() => {
@@ -257,7 +239,7 @@ export function FunnyVideoConference({
   // Broadcast filter updates over LiveKit reliable WebRTC data channel
   const broadcastFilter = useCallback(
     (
-      newFilter: FilterType,
+      newFilter: string,
       newIntensity: number,
       targetKey: FilterTarget,
       isRandomRoll: boolean = false,
@@ -305,10 +287,9 @@ export function FunnyVideoConference({
         const data = JSON.parse(text);
 
         if (data?.type === 'SNAP_MEET_FILTER_SYNC') {
-          const incomingFilter = data.filter as FilterType;
-          const validFilter: FilterType = incomingFilter in FILTER_LABELS ? incomingFilter : 'none';
+          const incomingFilter = String(data.filter || 'none');
+          const validFilter: string = incomingFilter;
           const incomingIntensity: number = typeof data.intensity === 'number' ? data.intensity : 1.0;
-          const isRandomRoll = Boolean(data.isRandomRoll);
           const senderName: string = data.senderName || 'Your friend';
           const senderIdentity: string = data.senderIdentity;
 
@@ -319,9 +300,8 @@ export function FunnyVideoConference({
             else if (data.target === 'both') targetIdentity = 'all';
           }
 
-          const actionLabel = isRandomRoll
-            ? `rolled Random: ${FILTER_LABELS[validFilter]}`
-            : `applied ${FILTER_LABELS[validFilter]}`;
+          const lensLabel = getFilterLabel(validFilter);
+          const actionLabel = `applied ${lensLabel}`;
 
           if (targetIdentity === 'all' || targetIdentity === 'both') {
             // Apply to all callers
@@ -343,9 +323,9 @@ export function FunnyVideoConference({
             });
 
             if (validFilter !== 'none') {
-              showToast(`${senderName} ${actionLabel} to everyone!`, FILTER_ICONS[validFilter]);
+              showToast(`${senderName} ${actionLabel} to everyone!`, SNAP_SPARKLE_ICON);
             } else {
-              showToast(`${senderName} reset all face filters`, '✨');
+              showToast(`${senderName} reset all face filters`, SNAP_RESET_ICON);
             }
           } else if (targetIdentity === room.localParticipant.identity) {
             // Target is ME!
@@ -358,9 +338,9 @@ export function FunnyVideoConference({
             }));
 
             if (validFilter !== 'none') {
-              showToast(`${senderName} ${actionLabel} to you!`, FILTER_ICONS[validFilter]);
+              showToast(`${senderName} ${actionLabel} to you!`, SNAP_SPARKLE_ICON);
             } else {
-              showToast(`${senderName} reset your face filter`, '✨');
+              showToast(`${senderName} reset your face filter`, SNAP_RESET_ICON);
             }
           } else {
             // Target is a specific participant in the room
@@ -373,7 +353,7 @@ export function FunnyVideoConference({
             }));
 
             if (targetIdentity === senderIdentity && validFilter !== 'none') {
-              showToast(`${senderName} applied ${FILTER_LABELS[validFilter]} to themselves!`, FILTER_ICONS[validFilter]);
+              showToast(`${senderName} applied ${lensLabel} to themselves!`, SNAP_SPARKLE_ICON);
             }
           }
         }
@@ -390,23 +370,8 @@ export function FunnyVideoConference({
 
   // Handler when user selects a filter in the FilterPanel
   const handleSelectFilter = useCallback(
-    (requestedFilter: FilterType) => {
-      let resolvedFilter = requestedFilter;
-      let isRandomRoll = false;
-
-      // Deterministically pick a single random filter so all participants see the exact same result
-      if (requestedFilter === 'random') {
-        const currentActiveFilter =
-          target === 'me' && room?.localParticipant
-            ? filtersByParticipant[room.localParticipant.identity]?.filter || 'none'
-            : target === 'all' || target === 'both'
-            ? 'none'
-            : filtersByParticipant[target]?.filter || 'none';
-
-        const availablePool = RANDOM_POOL.filter((f) => f !== currentActiveFilter);
-        resolvedFilter = availablePool[Math.floor(Math.random() * availablePool.length)];
-        isRandomRoll = true;
-      }
+    (requestedFilter: string) => {
+      const resolvedFilter = requestedFilter;
 
       setFiltersByParticipant((prev) => {
         const next = { ...prev };
@@ -443,7 +408,7 @@ export function FunnyVideoConference({
         return next;
       });
 
-      broadcastFilter(resolvedFilter, filterIntensity, target, isRandomRoll);
+      broadcastFilter(resolvedFilter, filterIntensity, target, false);
     },
     [target, filterIntensity, filtersByParticipant, room, remoteParticipants, broadcastFilter],
   );
@@ -453,7 +418,7 @@ export function FunnyVideoConference({
     (newIntensity: number) => {
       setFilterIntensity(newIntensity);
 
-      let currentActive: FilterType = 'none';
+      let currentActive: string = 'none';
       if (target === 'me' && room?.localParticipant) {
         currentActive = filtersByParticipant[room.localParticipant.identity]?.filter || 'none';
       } else if (target === 'all' || target === 'both') {
@@ -476,7 +441,7 @@ export function FunnyVideoConference({
   );
 
   // Active filter for the FilterPanel preview/reset state
-  const currentPanelFilter: FilterType =
+  const currentPanelFilter: string =
     target === 'me' && room?.localParticipant
       ? filtersByParticipant[room.localParticipant.identity]?.filter || 'none'
       : target === 'all' || target === 'both'
@@ -484,7 +449,7 @@ export function FunnyVideoConference({
       : filtersByParticipant[target === 'friend' ? (remoteParticipants[0]?.identity || '') : target]?.filter || 'none';
 
   // Active filter for the bottom control bar label
-  const activeControlFilter: FilterType =
+  const activeControlFilter: string =
     (room?.localParticipant && filtersByParticipant[room.localParticipant.identity]?.filter) ||
     currentPanelFilter;
 
@@ -525,7 +490,7 @@ export function FunnyVideoConference({
             pointerEvents: 'none',
           }}
         >
-          <span style={{ fontSize: '18px', flexShrink: 0 }}>{toast.icon}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{toast.icon}</span>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{toast.message}</span>
         </div>
       )}
@@ -561,7 +526,7 @@ export function FunnyVideoConference({
           {/* 5. Native LiveKit Controls with Face Effects integrated directly */}
           <FunnyControlBar
             activeFilter={activeControlFilter}
-            filterLabel={FILTER_LABELS[activeControlFilter]}
+            filterLabel={getFilterLabel(activeControlFilter)}
             isPanelOpen={showFilterPanel}
             onTogglePanel={() => setShowFilterPanel(!showFilterPanel)}
             showSettings={!!SettingsComponent}

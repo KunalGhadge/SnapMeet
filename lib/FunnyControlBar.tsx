@@ -12,10 +12,8 @@ import {
   useMaybeLayoutContext,
   usePersistentUserChoices,
 } from '@livekit/components-react';
-import { FilterType } from './filters/faceDeformationRenderer';
-
 export interface FunnyControlBarProps {
-  activeFilter: FilterType;
+  activeFilter: string;
   filterLabel: string;
   isPanelOpen: boolean;
   onTogglePanel: () => void;

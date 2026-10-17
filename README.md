@@ -1,70 +1,59 @@
-# Snap Meet 📸✨
+# Snap Meet
 
-> **Real-Time WebRTC Video Conferencing with Snapchat-Style AR Effects & Facial Warps**
+> Real-Time WebRTC Video Conferencing with Official Snap Camera Kit AR Lenses
 
-Snap Meet elevates standard video calls into an interactive, fun, and high-performance conferencing experience. Built with Next.js, LiveKit Cloud WebRTC, and GPU-accelerated WebGL shaders, Snap Meet delivers uninterrupted 60fps video with real-time AR face accessories and dynamic facial deformations synchronized across all participants.
+Snap Meet elevates standard video calls into an interactive, high-performance conferencing experience. Built with Next.js 15, LiveKit Cloud WebRTC, and the official Snap Camera Kit Web SDK, Snap Meet delivers uninterrupted 60fps video with real-time AR lenses and dynamic facial tracking synchronized across participants.
 
 ---
 
-## 🌟 Key Features
+## Features
 
-### 🎭 15 Real-Time Face Filters & AR Effects
-- **Snapchat AR Props**:
-  - 🐶 **Puppy Dog**: Fluffy animated floppy ears, pink tongue, and cute nose.
-  - 🐱 **Kitty Cat**: Pointy inner-pink cat ears, twitching whiskers, and button nose.
-  - 😎 **Thug Life**: Iconic 8-bit pixel sunglasses, gold chain, and spinning smoke.
-  - 🥸 **Disguise**: Classic Groucho Marx bushy eyebrows, spectacles, and mustache.
-  - 😈 **Devil Horns**: Fiery curved demon horns with a radiant crimson aura.
-  - 😇 **Angel Halo**: Floating golden angelic halo with particle glow.
-- **GPU Facial Warps**:
-  - 👽 **Big Head**: Exaggerates head size while preserving eye clarity.
-  - 🤏 **Tiny Face**: Pinches facial features into a comedic miniature cluster.
-  - 👽 **Alien**: Stretches forehead and slims chin for an extraterrestrial look.
-  - 🗿 **Mega Chin**: Chiseled gigachad jawline distortion.
-  - 🌀 **Hypnotic Swirl**: Swirling vortex centered on facial coordinates.
-  - 🌊 **Jelly Wiggle**: Sine-wave liquid ripple across the video frame.
-  - 👁️ **Cyclops**: Merges eyes into a single giant center eye.
-  - 🎲 **Chaos Random**: Automatically cycles deformations for maximum fun.
+### Official Snap Camera Kit AR Lenses
+- **Official Snap Lenses**: Powered directly by `@snap/camera-kit` connecting to your configured Snap Lens Group.
+- **Dynamic Aspect Ratio & Zero Distortion**: Internal render resolution dynamically synchronizes with conference tile containers to prevent zoom distortion and cropping.
+- **Instant Lens Switching**: Smart media source caching connects WebRTC camera tracks without redundant detachment cycles.
+- **Seamless Failure Fallback**: Graceful error handling ensures camera playback never freezes or goes black.
 
-### 👥 Multi-User Synchronized Controls
-- **Target Anyone in the Room**: Apply filters to your own camera or surprise friends in the meeting by triggering filters on their video tiles.
-- **Instant WebRTC Data Synchronization**: Filter selections and intensity adjustments synchronize across all peers in milliseconds via WebRTC Data Channels.
-- **Tile Effect Badges**: Every video tile displays a glassmorphic badge showing the active effect and offering one-click filter configuration.
+### Multi-User Synchronized Controls
+- **Target Remote Participants**: Apply lenses to your own camera preview or trigger effects on friends' video tiles.
+- **Instant WebRTC Data Synchronization**: Filter selections synchronize across peers in milliseconds via WebRTC Data Channels.
+- **Active Lens Badges**: Every video tile displays a badge showing the active lens with one-click reset controls.
 
-### ⚡ Resilient 60FPS Video Streaming
-- **Continuous Frame Delivery**: Stream options configured to prevent server-side downsampling or freezing when tabs are unfocused or split-screened.
-- **Zero-Block Hardware Decoding**: Native WebRTC video streams decode directly on hardware while AR overlays and WebGL shaders run decoupled, guaranteeing fluid frame rates.
-- **Multi-Window Stability**: Reliable playback across split screens, multiple monitors, and multi-user conference grids.
+### 60FPS Hardware Accelerated Video
+- **VP8 Hardware Codec**: Optimized for ultra-low latency and low CPU utilization across multi-window conferences.
+- **Adaptive Streaming & Dynacast**: LiveKit dynacast and adaptive streaming optimize network bandwidth and frame delivery.
+- **Continuous Frame Delivery**: WebRTC streams remain active and fluid across split screens and multi-monitor setups.
 
-### 🎨 Modern Glassmorphic UI
-- Designed with high-contrast sleek dark aesthetics, subtle gradients, and micro-animations.
-- Categorized drawer tabs (*Snapchat AR*, *Facial Warps*, *Normal*) for effortless effect browsing.
-- Adaptive responsive layout that scales gracefully from ultra-wide monitors down to mobile devices.
+### Modern UI & Pixel Art Visuals
+- High-contrast dark theme with glassmorphic elements and clean vector icons (zero emojis).
+- Interactive Pixel Snow background on the landing page with physics and depth.
+- Fully responsive layout for desktop, tablet, and mobile browsers.
 
-### 🔒 Enterprise-Grade Security
+### Enterprise Security
 - Optional End-to-End Encryption (E2EE) powered by Web Workers.
 - Secure token-based room authorization.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- **Framework**: Next.js 15 (App Router, Turbopack / Webpack)
+- **Framework**: Next.js 15 (App Router, React 18)
 - **Language**: TypeScript 5
-- **WebRTC & Real-time Media**: LiveKit Client SDK (`livekit-client`, `@livekit/components-react`)
-- **Graphics & AR**: WebGL 2.0 Fragment Shaders, Offscreen Canvas, Chromium Native FaceDetector API
-- **Styling**: Vanilla CSS with CSS Custom Properties and glassmorphic blur effects
+- **WebRTC & Real-time Media**: LiveKit Client SDK (`livekit-client`, `@livekit/components-react`, `livekit-server-sdk`)
+- **AR Engine**: Snap Camera Kit Web SDK (`@snap/camera-kit`)
+- **Styling**: Vanilla CSS Modules with glassmorphism design tokens
 - **Testing**: Vitest
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (version 18 or higher)
 - [pnpm](https://pnpm.io/) package manager
-- A free [LiveKit Cloud](https://cloud.livekit.io/) account or self-hosted LiveKit Server
+- A free [LiveKit Cloud](https://cloud.livekit.io/) account
+- A [Snap Camera Kit](https://camera-kit.snap.com/) developer account
 
 ### Installation
 
@@ -82,10 +71,12 @@ Snap Meet elevates standard video calls into an interactive, fun, and high-perfo
 3. **Configure Environment Variables**:
    Create a `.env.local` file in the root directory:
    ```env
+   LIVEKIT_URL=wss://your-project.livekit.cloud
    LIVEKIT_API_KEY=your_livekit_api_key
    LIVEKIT_API_SECRET=your_livekit_api_secret
-   LIVEKIT_URL=https://your-project.livekit.cloud
-   NEXT_PUBLIC_LK_TOKEN_ENDPOINT=/api/token
+
+   NEXT_PUBLIC_SNAP_CAMERA_KIT_API_TOKEN=your_camera_kit_api_token
+   NEXT_PUBLIC_SNAP_CAMERA_KIT_LENS_GROUP_ID=your_lens_group_id
    ```
 
 4. **Start the development server**:
@@ -101,36 +92,73 @@ Snap Meet elevates standard video calls into an interactive, fun, and high-perfo
 
 ---
 
-## 📁 Project Structure
+## Deployment on Vercel
+
+Follow these steps to deploy Snap Meet to Vercel:
+
+### Step 1: Push Code to GitHub
+Ensure all code is committed and pushed to your GitHub repository:
+```bash
+git add .
+git commit -m "Configure Snap Meet with Snap Camera Kit"
+git push origin main
+```
+
+### Step 2: Import Project in Vercel
+1. Log into your [Vercel Dashboard](https://vercel.com).
+2. Click **Add New...** > **Project**.
+3. Select your GitHub repository (`KunalGhadge/SnapMeet`).
+4. Select **Next.js** as the Framework Preset (automatically detected).
+5. Leave the Root Directory as `./`.
+
+### Step 3: Add Environment Variables
+In the Vercel project configuration page under **Environment Variables**, add the following 5 variables:
+
+| Variable Name | Description | Example |
+|---|---|---|
+| `LIVEKIT_URL` | LiveKit Cloud WebSocket URL | `wss://snap-meet-xxxx.livekit.cloud` |
+| `LIVEKIT_API_KEY` | LiveKit Cloud API Key | `APIxxxxxxxx` |
+| `LIVEKIT_API_SECRET` | LiveKit Cloud API Secret | `xxxxxxxxxxxxxxxxxxxxxxxx` |
+| `NEXT_PUBLIC_SNAP_CAMERA_KIT_API_TOKEN` | Snap Camera Kit API Token | `ey...` |
+| `NEXT_PUBLIC_SNAP_CAMERA_KIT_LENS_GROUP_ID` | Snap Camera Kit Lens Group UUID | `d01892b6-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
+
+> Important: Ensure `NEXT_PUBLIC_SNAP_CAMERA_KIT_API_TOKEN` and `NEXT_PUBLIC_SNAP_CAMERA_KIT_LENS_GROUP_ID` are prefixed with `NEXT_PUBLIC_` so they are available in browser client components.
+
+### Step 4: Deploy
+Click **Deploy**. Vercel will build the Next.js application and deploy it to a global edge network.
+
+---
+
+## Project Structure
 
 ```text
 ├── app/
-│   ├── custom/                # Custom room connection implementations
-│   ├── rooms/[roomName]/      # Main conference room view & client logic
-│   ├── layout.tsx             # Root layout with Snap Meet metadata
-│   └── page.tsx               # Landing page (Start/Join call)
+│   ├── api/
+│   │   └── connection-details/    # LiveKit token generation endpoint
+│   ├── rooms/[roomName]/          # Main conference room view & client logic
+│   ├── layout.tsx                 # Root layout with Snap Meet metadata & icons
+│   └── page.tsx                   # Landing page (Start/Join call, PixelSnow)
 ├── lib/
+│   ├── camerakit/
+│   │   ├── cameraKitService.ts    # Camera Kit singleton session & dynamic sizing
+│   │   └── suppressWasmWarnings.ts# Clean WebAssembly warning suppressor
 │   ├── filters/
-│   │   ├── ARFaceOverlay.tsx         # Snapchat AR props (Puppy, Cat, Thug Life, etc.)
-│   │   ├── faceDeformationRenderer.ts# WebGL vertex/fragment warp shaders
-│   │   ├── faceTracker.ts            # Non-blocking face tracking engine
-│   │   ├── FilterPanel.tsx           # Categorized filter selector drawer
-│   │   └── RemoteFunnyVideoTile.tsx  # Resilient video tile with AR overlay
-│   ├── FunnyControlBar.tsx    # Conference control bar with Effects trigger
-│   └── FunnyVideoConference.tsx# Video conference layout & WebRTC synchronization
+│   │   ├── FilterPanel.tsx        # Snap Lens drawer tray with target selector
+│   │   └── RemoteFunnyVideoTile.tsx# Camera Kit canvas renderer & aspect ratio sync
+│   ├── PixelSnow.tsx              # Interactive pixel-art snowflake background
+│   ├── FunnyControlBar.tsx        # Conference control bar with Effects trigger
+│   └── FunnyVideoConference.tsx   # Video conference layout & WebRTC synchronization
 ├── styles/
-│   ├── globals.css            # Base design tokens and resets
-│   └── funnyFilters.css       # Filter panel and badge glassmorphism styles
+│   ├── globals.css                # Base design tokens and resets
+│   ├── Home.module.css            # Landing page layout and responsive styles
+│   └── funnyFilters.css           # Lens drawer, pucks, and badge styles
 └── public/
-    └── images/                # Snap Meet brand assets and icons
+    ├── favicon.svg                # Snap Meet vector favicon
+    └── images/                    # Brand assets and logos
 ```
 
 ---
 
-## 🤝 Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request for new features, additional AR filters, or performance enhancements.
-
-## 📄 License
+## License
 
 This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
