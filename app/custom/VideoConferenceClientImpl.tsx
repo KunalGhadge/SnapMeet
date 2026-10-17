@@ -1,6 +1,7 @@
 'use client';
 
-import { formatChatMessageLinks, RoomContext, VideoConference } from '@livekit/components-react';
+import { formatChatMessageLinks, RoomContext } from '@livekit/components-react';
+import { FunnyVideoConference } from '@/lib/FunnyVideoConference';
 import {
   ExternalE2EEKeyProvider,
   LogLevel,
@@ -36,8 +37,8 @@ export function VideoConferenceClientImpl(props: {
         red: !e2eeEnabled,
         videoCodec: props.codec,
       },
-      adaptiveStream: { pixelDensity: 'screen' },
-      dynacast: true,
+      adaptiveStream: false,
+      dynacast: false,
       e2ee: e2eeEnabled
         ? {
             keyProvider,
@@ -85,7 +86,7 @@ export function VideoConferenceClientImpl(props: {
     <div className="lk-room-container">
       <RoomContext.Provider value={room}>
         <KeyboardShortcuts />
-        <VideoConference
+        <FunnyVideoConference
           chatMessageFormatter={formatChatMessageLinks}
           SettingsComponent={
             process.env.NEXT_PUBLIC_SHOW_SETTINGS_MENU === 'true' ? SettingsMenu : undefined

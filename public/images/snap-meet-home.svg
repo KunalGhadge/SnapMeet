@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 80" width="360" height="54" fill="none">
+  <defs>
+    <linearGradient id="snapGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF7565" />
+      <stop offset="100%" stop-color="#FF513E" />
+    </linearGradient>
+  </defs>
+  <!-- Accent icon badge -->
+  <rect x="8" y="14" width="50" height="50" rx="14" fill="url(#snapGrad)" />
+  <circle cx="33" cy="39" r="12" stroke="#ffffff" stroke-width="3.5" fill="none" />
+  <circle cx="42" cy="27" r="3" fill="#ffffff" />
+  <!-- Sparkle star -->
+  <path d="M52 14L54.5 7L57 14L64 16.5L57 19L54.5 26L52 19L45 16.5Z" fill="#FCD34D" />
+  <!-- Text: Snap -->
+  <text x="74" y="54" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'TWK Everett', Helvetica, Arial, sans-serif" font-weight="800" font-size="46" letter-spacing="-0.03em">Snap</text>
+  <!-- Text: Meet -->
+  <text x="194" y="54" fill="#FF6352" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'TWK Everett', Helvetica, Arial, sans-serif" font-weight="350" font-size="46" letter-spacing="-0.01em">Meet</text>
+</svg>

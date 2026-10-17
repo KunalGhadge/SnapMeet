@@ -7,17 +7,18 @@ import styles from '../styles/Home.module.css';
 
 function Tabs(props: React.PropsWithChildren<{}>) {
   const searchParams = useSearchParams();
-  const tabIndex = searchParams?.get('tab') === 'custom' ? 1 : 0;
+  const tabIndex = searchParams?.get('tab') === 'join' ? 1 : 0;
 
   const router = useRouter();
   function onTabSelected(index: number) {
-    const tab = index === 1 ? 'custom' : 'demo';
+    const tab = index === 1 ? 'join' : 'start';
     router.push(`/?tab=${tab}`);
   }
 
   let tabs = React.Children.map(props.children, (child, index) => {
     return (
       <button
+        type="button"
         className="lk-button"
         onClick={() => {
           if (onTabSelected) {
@@ -41,10 +42,11 @@ function Tabs(props: React.PropsWithChildren<{}>) {
   );
 }
 
-function DemoMeetingTab(props: { label: string }) {
+function StartCallTab(props: { label: string }) {
   const router = useRouter();
   const [e2ee, setE2ee] = useState(false);
   const [sharedPassphrase, setSharedPassphrase] = useState(randomString(64));
+
   const startMeeting = () => {
     if (e2ee) {
       router.push(`/rooms/${generateRoomId()}#${encodePassphrase(sharedPassphrase)}`);
@@ -52,30 +54,42 @@ function DemoMeetingTab(props: { label: string }) {
       router.push(`/rooms/${generateRoomId()}`);
     }
   };
+
   return (
     <div className={styles.tabContent}>
-      <p style={{ margin: 0 }}>Try LiveKit Meet for free with our live demo project.</p>
-      <button style={{ marginTop: '1rem' }} className="lk-button" onClick={startMeeting}>
-        Start Meeting
+      <p style={{ margin: 0 }}>Start an instant video call with real-time AR face filters.</p>
+      <button style={{ marginTop: '0.5rem' }} className="lk-button" onClick={startMeeting} type="button">
+        Start New Call
       </button>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ display: 'flex', flexDirection: 'row', gap: '1rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.25rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'row', gap: '0.75rem', alignItems: 'center' }}>
           <input
             id="use-e2ee"
             type="checkbox"
             checked={e2ee}
             onChange={(ev) => setE2ee(ev.target.checked)}
-          ></input>
-          <label htmlFor="use-e2ee">Enable end-to-end encryption</label>
+          />
+          <label htmlFor="use-e2ee" style={{ fontSize: '14px', cursor: 'pointer' }}>
+            Enable end-to-end encryption
+          </label>
         </div>
         {e2ee && (
-          <div style={{ display: 'flex', flexDirection: 'row', gap: '1rem' }}>
-            <label htmlFor="passphrase">Passphrase</label>
+          <div style={{ display: 'flex', flexDirection: 'row', gap: '1rem', alignItems: 'center' }}>
+            <label htmlFor="passphrase" style={{ fontSize: '14px' }}>Passphrase</label>
             <input
               id="passphrase"
               type="password"
               value={sharedPassphrase}
               onChange={(ev) => setSharedPassphrase(ev.target.value)}
+              className="lk-form-control"
+              style={{
+                flex: 1,
+                padding: '0.4rem 0.75rem',
+                backgroundColor: 'var(--lk-control-bg, rgba(255, 255, 255, 0.05))',
+                border: '1px solid var(--lk-border-color, rgba(255, 255, 255, 0.15))',
+                borderRadius: 'var(--lk-border-radius, 6px)',
+                color: 'inherit',
+              }}
             />
           </div>
         )}
@@ -84,77 +98,97 @@ function DemoMeetingTab(props: { label: string }) {
   );
 }
 
-function CustomConnectionTab(props: { label: string }) {
+function JoinCallTab(props: { label: string }) {
   const router = useRouter();
-
+  const [roomInput, setRoomInput] = useState('');
   const [e2ee, setE2ee] = useState(false);
-  const [sharedPassphrase, setSharedPassphrase] = useState(randomString(64));
+  const [sharedPassphrase, setSharedPassphrase] = useState('');
 
   const onSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
     event.preventDefault();
-    const formData = new FormData(event.target as HTMLFormElement);
-    const serverUrl = formData.get('serverUrl');
-    const token = formData.get('token');
-    if (e2ee) {
-      router.push(
-        `/custom/?liveKitUrl=${serverUrl}&token=${token}#${encodePassphrase(sharedPassphrase)}`,
-      );
+    let cleaned = roomInput.trim();
+    if (!cleaned) return;
+
+    // Handle full URL pasted (e.g. https://domain.com/rooms/abc-1234 or /rooms/abc-1234)
+    if (cleaned.includes('/rooms/')) {
+      const parts = cleaned.split('/rooms/');
+      cleaned = parts[parts.length - 1].split('?')[0].split('#')[0];
+    } else if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+      try {
+        const url = new URL(cleaned);
+        const pathSegments = url.pathname.split('/').filter(Boolean);
+        cleaned = pathSegments[pathSegments.length - 1] || cleaned;
+      } catch (e) {
+        // Fallback
+      }
+    }
+
+    if (e2ee && sharedPassphrase) {
+      router.push(`/rooms/${encodeURIComponent(cleaned)}#${encodePassphrase(sharedPassphrase)}`);
     } else {
-      router.push(`/custom/?liveKitUrl=${serverUrl}&token=${token}`);
+      router.push(`/rooms/${encodeURIComponent(cleaned)}`);
     }
   };
+
   return (
     <form className={styles.tabContent} onSubmit={onSubmit}>
-      <p style={{ marginTop: 0 }}>
-        Connect LiveKit Meet with a custom server using LiveKit Cloud or LiveKit Server.
-      </p>
+      <p style={{ margin: 0 }}>Join an existing call by entering a room code or invite link.</p>
       <input
-        id="serverUrl"
-        name="serverUrl"
-        type="url"
-        placeholder="LiveKit Server URL: wss://*.livekit.cloud"
+        id="roomName"
+        name="roomName"
+        type="text"
+        placeholder="Room code or paste link (e.g. srad-c13n)"
+        value={roomInput}
+        onChange={(e) => setRoomInput(e.target.value)}
         required
+        className="lk-form-control"
+        style={{
+          width: '100%',
+          backgroundColor: 'var(--lk-control-bg, rgba(255, 255, 255, 0.05))',
+          color: 'inherit',
+          border: '1px solid var(--lk-border-color, rgba(255, 255, 255, 0.15))',
+          borderRadius: 'var(--lk-border-radius, 8px)',
+          padding: '0.625rem 1rem',
+          fontSize: 'inherit',
+        }}
       />
-      <textarea
-        id="token"
-        name="token"
-        placeholder="Token"
-        required
-        rows={5}
-        style={{ padding: '1px 2px', fontSize: 'inherit', lineHeight: 'inherit' }}
-      />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ display: 'flex', flexDirection: 'row', gap: '1rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.25rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'row', gap: '0.75rem', alignItems: 'center' }}>
           <input
-            id="use-e2ee"
+            id="use-e2ee-join"
             type="checkbox"
             checked={e2ee}
             onChange={(ev) => setE2ee(ev.target.checked)}
-          ></input>
-          <label htmlFor="use-e2ee">Enable end-to-end encryption</label>
+          />
+          <label htmlFor="use-e2ee-join" style={{ fontSize: '14px', cursor: 'pointer' }}>
+            Room uses end-to-end encryption
+          </label>
         </div>
         {e2ee && (
-          <div style={{ display: 'flex', flexDirection: 'row', gap: '1rem' }}>
-            <label htmlFor="passphrase">Passphrase</label>
+          <div style={{ display: 'flex', flexDirection: 'row', gap: '1rem', alignItems: 'center' }}>
+            <label htmlFor="join-passphrase" style={{ fontSize: '14px' }}>Passphrase</label>
             <input
-              id="passphrase"
+              id="join-passphrase"
               type="password"
+              placeholder="Room Passphrase"
               value={sharedPassphrase}
               onChange={(ev) => setSharedPassphrase(ev.target.value)}
+              className="lk-form-control"
+              style={{
+                flex: 1,
+                padding: '0.4rem 0.75rem',
+                backgroundColor: 'var(--lk-control-bg, rgba(255, 255, 255, 0.05))',
+                border: '1px solid var(--lk-border-color, rgba(255, 255, 255, 0.15))',
+                borderRadius: 'var(--lk-border-radius, 6px)',
+                color: 'inherit',
+              }}
             />
           </div>
         )}
       </div>
 
-      <hr
-        style={{ width: '100%', borderColor: 'rgba(255, 255, 255, 0.15)', marginBlock: '1rem' }}
-      />
-      <button
-        style={{ paddingInline: '1.25rem', width: '100%' }}
-        className="lk-button"
-        type="submit"
-      >
-        Connect
+      <button style={{ marginTop: '0.25rem', width: '100%' }} className="lk-button" type="submit">
+        Join Call
       </button>
     </form>
   );
@@ -165,33 +199,25 @@ export default function Page() {
     <>
       <main className={styles.main} data-lk-theme="default">
         <div className="header">
-          <img src="/images/livekit-meet-home.svg" alt="LiveKit Meet" width="360" height="45" />
+          <img src="/images/snap-meet-home.svg" alt="Snap Meet" width="360" height="54" />
           <h2>
-            Open source video conferencing app built on{' '}
-            <a href="https://github.com/livekit/components-js?ref=meet" rel="noopener">
-              LiveKit&nbsp;Components
-            </a>
-            ,{' '}
-            <a href="https://livekit.io/cloud?ref=meet" rel="noopener">
-              LiveKit&nbsp;Cloud
-            </a>{' '}
-            and Next.js.
+            Real-time video calling with funny face filters and AR effects.
           </h2>
         </div>
         <Suspense fallback="Loading">
           <Tabs>
-            <DemoMeetingTab label="Demo" />
-            <CustomConnectionTab label="Custom" />
+            <StartCallTab label="Start Call" />
+            <JoinCallTab label="Join Call" />
           </Tabs>
         </Suspense>
       </main>
       <footer data-lk-theme="default">
         Hosted on{' '}
-        <a href="https://livekit.io/cloud?ref=meet" rel="noopener">
+        <a href="https://livekit.io/cloud?ref=meet" target="_blank" rel="noopener">
           LiveKit Cloud
         </a>
         . Source code on{' '}
-        <a href="https://github.com/livekit/meet?ref=meet" rel="noopener">
+        <a href="https://github.com/KunalGhadge/SnapMeet" target="_blank" rel="noopener">
           GitHub
         </a>
         .

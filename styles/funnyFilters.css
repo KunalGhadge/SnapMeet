@@ -1,0 +1,692 @@
+/* Snap Meet - Premium AR Lens Studio & Responsive Video Theme */
+
+/* Backdrop overlay */
+.funny-filter-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 99;
+  animation: funnyFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================================
+   Snapchat / Apple FaceTime Style AR Studio Dock
+   ========================================================================== */
+.funny-lens-studio {
+  position: fixed;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: rgba(16, 18, 25, 0.94);
+  backdrop-filter: blur(32px) saturate(210%);
+  -webkit-backdrop-filter: blur(32px) saturate(210%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 40px rgba(31, 140, 249, 0.12);
+  color: var(--lk-fg, #fff);
+  font-family: inherit;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Desktop Floating Dock */
+@media (min-width: 641px) {
+  .funny-lens-studio {
+    bottom: calc(var(--lk-control-bar-height, 69px) + 14px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(640px, calc(100vw - 32px));
+    max-height: min(80vh, 620px);
+    border-radius: 24px;
+    animation: funnySlideUpDesktop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+/* Mobile & Tablet Bottom Sheet */
+@media (max-width: 640px) {
+  .funny-lens-studio {
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 85vh;
+    border-radius: 24px 24px 0 0;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    padding-bottom: calc(var(--lk-control-bar-height, 69px) + env(safe-area-inset-bottom, 12px));
+    animation: funnySlideUpMobile 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+/* Mobile Pull Bar */
+.funny-mobile-handle {
+  display: none;
+  width: 40px;
+  height: 4.5px;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.3);
+  margin: 10px auto 2px auto;
+  flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .funny-mobile-handle {
+    display: block;
+  }
+}
+
+/* Header */
+.funny-studio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(12, 14, 20, 0.7);
+  flex-shrink: 0;
+}
+
+.funny-studio-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.funny-studio-sparkle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(31, 140, 249, 0.3), rgba(236, 72, 153, 0.25));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #38bdf8;
+  box-shadow: 0 4px 12px rgba(31, 140, 249, 0.3);
+}
+
+.funny-studio-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.funny-studio-subtitle {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 1px;
+}
+
+.funny-studio-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Random Surprise Quick Button */
+.funny-quick-dice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid rgba(236, 72, 153, 0.4);
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(139, 92, 246, 0.2));
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.funny-quick-dice-btn:hover {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.35), rgba(139, 92, 246, 0.35));
+  border-color: rgba(236, 72, 153, 0.6);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 14px rgba(236, 72, 153, 0.3);
+}
+
+@media (max-width: 480px) {
+  .funny-quick-dice-text {
+    display: none;
+  }
+}
+
+/* Clear/Reset Chip */
+.funny-reset-chip {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.funny-reset-chip:hover {
+  background: rgba(239, 68, 68, 0.28);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #fff;
+}
+
+/* Close Button */
+.funny-studio-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.funny-studio-close-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+/* Scrollable Content Body */
+.funny-studio-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overscroll-behavior: contain;
+}
+
+.funny-studio-body::-webkit-scrollbar {
+  width: 5px;
+}
+.funny-studio-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.funny-studio-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+
+/* ==========================================================================
+   Apple-Style Segmented Target Selector ("Send Effect To")
+   ========================================================================== */
+.funny-target-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.funny-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.funny-section-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.funny-target-feedback {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.funny-target-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 6px #38bdf8;
+  animation: funnyPulse 1.8s infinite;
+}
+
+.funny-target-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow-x: auto;
+}
+
+.funny-target-pill {
+  flex: 1;
+  min-width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.funny-target-pill:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.funny-target-pill.active {
+  background: #1f8cf9;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(31, 140, 249, 0.4);
+}
+
+.funny-pill-icon {
+  font-size: 14px;
+}
+
+/* ==========================================================================
+   Category Selector Tabs
+   ========================================================================== */
+.funny-category-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 2px;
+}
+
+.funny-category-tab {
+  padding: 6px 14px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+  transition: all 0.16s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.funny-category-tab:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.funny-category-tab.active {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================================================
+   Snapchat-Style Circular Lens Grid
+   ========================================================================== */
+.funny-lens-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px 10px;
+  padding: 6px 2px;
+}
+
+@media (max-width: 580px) {
+  .funny-lens-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .funny-lens-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px 6px;
+  }
+}
+
+.funny-lens-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  text-align: center;
+}
+
+/* Circular Lens Puck */
+.funny-lens-puck {
+  position: relative;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, 0.16);
+  background: var(--lens-gradient, #222);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.2s ease;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  padding: 0;
+  outline: none;
+}
+
+@media (max-width: 480px) {
+  .funny-lens-puck {
+    width: 58px;
+    height: 58px;
+  }
+}
+
+.funny-lens-puck:hover {
+  transform: translateY(-4px) scale(1.06);
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 12px 28px var(--lens-glow, rgba(31, 140, 249, 0.4)), inset 0 1px 3px rgba(255, 255, 255, 0.5);
+}
+
+.funny-lens-puck:active {
+  transform: scale(0.96);
+}
+
+/* Selected Active Lens State */
+.funny-lens-puck.active {
+  transform: scale(1.08);
+  border-color: #fff;
+  box-shadow: 0 0 0 3.5px #1f8cf9, 0 14px 34px rgba(31, 140, 249, 0.65), inset 0 1px 4px rgba(255, 255, 255, 0.6);
+  animation: funnyLensBounce 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.funny-lens-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: transform 0.2s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.funny-lens-puck:hover .funny-lens-icon-wrap {
+  transform: scale(1.1);
+}
+
+/* Active Checkmark Badge */
+.funny-lens-active-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #1f8cf9;
+  border: 2px solid #101219;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  animation: funnyPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Tag Pill */
+.funny-lens-pill-tag {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 1.5px 6px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Lens Name Label */
+.funny-lens-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+  transition: color 0.16s ease;
+}
+
+.funny-lens-label.active {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Studio Footer / Active Lens Shelf
+   ========================================================================== */
+.funny-studio-footer {
+  padding: 14px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(12, 14, 20, 0.85);
+  flex-shrink: 0;
+}
+
+.funny-active-shelf {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 580px) {
+  .funny-active-shelf {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+}
+
+.funny-shelf-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.funny-shelf-icon-puck {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
+
+.funny-shelf-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.funny-shelf-target-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(31, 140, 249, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(31, 140, 249, 0.35);
+}
+
+.funny-shelf-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+/* Slider Controls */
+.funny-shelf-slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 220px;
+}
+
+.funny-slider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.funny-slider-val {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.funny-slider-track-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.funny-slider-min,
+.funny-slider-max {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.funny-intensity-range {
+  flex: 1;
+  height: 5px;
+  border-radius: 999px;
+  accent-color: #1f8cf9;
+  background: rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  outline: none;
+}
+
+/* Idle Shelf */
+.funny-shelf-idle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: center;
+  padding: 4px 0;
+}
+
+.funny-idle-icon {
+  font-size: 15px;
+}
+
+/* ==========================================================================
+   Responsive Control Bar & Animations
+   ========================================================================== */
+.funny-control-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .funny-control-bar {
+    gap: 4px;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+  .funny-control-bar .lk-button,
+  .funny-control-bar .lk-chat-toggle,
+  .funny-control-bar .lk-disconnect-button {
+    padding: 0.5rem 0.65rem;
+    font-size: 13px;
+  }
+}
+
+/* Keyframes */
+@keyframes funnyFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes funnySlideUpDesktop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@media (max-width: 640px) {
+  @keyframes funnySlideUpMobile {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@keyframes funnyLensBounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1.08); }
+}
+
+@keyframes funnyPopIn {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes funnyPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}

@@ -6,27 +6,17 @@ import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
   title: {
-    default: 'LiveKit Meet | Conference app build with LiveKit open source',
+    default: 'Snap Meet | Real-time WebRTC Video Calls with AR Face Effects',
     template: '%s',
   },
   description:
-    'LiveKit is an open source WebRTC project that gives you everything needed to build scalable and real-time audio and/or video experiences in your applications.',
+    'Snap Meet is a real-time WebRTC video calling application featuring Snapchat-style AR face effects, facial warps, and synchronized multi-user interactions.',
   twitter: {
-    creator: '@livekitted',
-    site: '@livekitted',
     card: 'summary_large_image',
   },
   openGraph: {
-    url: 'https://meet.livekit.io',
-    images: [
-      {
-        url: 'https://meet.livekit.io/images/livekit-meet-open-graph.png',
-        width: 2000,
-        height: 1000,
-        type: 'image/png',
-      },
-    ],
-    siteName: 'LiveKit Meet',
+    url: 'https://github.com/KunalGhadge/SnapMeet',
+    siteName: 'Snap Meet',
   },
   icons: {
     icon: {
