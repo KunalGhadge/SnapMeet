@@ -690,3 +690,39 @@
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.4; transform: scale(0.85); }
 }
+
+/* ==========================================================================
+   Participant Tile Native Metadata & Indicators (Name, Mic, Network Quality)
+   ========================================================================== */
+.lk-participant-tile .lk-participant-metadata {
+  position: absolute;
+  right: 0.35rem;
+  bottom: 0.35rem;
+  left: 0.35rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  line-height: 1;
+  z-index: 10 !important;
+  pointer-events: none;
+}
+
+.lk-participant-tile .lk-participant-metadata > * {
+  pointer-events: auto;
+}
+
+.lk-participant-tile .lk-connection-quality {
+  opacity: 1 !important;
+  display: flex !important;
+}
+
+.lk-participant-tile .lk-focus-toggle-button {
+  z-index: 10 !important;
+}
+
+.lk-participant-tile .lk-participant-placeholder {
+  z-index: 5 !important;
+}
+

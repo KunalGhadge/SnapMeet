@@ -5,8 +5,11 @@ import {
   Chat,
   ConnectionStateToast,
   ConnectionQualityIndicator,
+  FocusToggle,
   LayoutContextProvider,
+  LockLockedIcon,
   ParticipantName,
+  ParticipantPlaceholder,
   ParticipantTile,
   RoomAudioRenderer,
   TrackLoop,
@@ -14,6 +17,7 @@ import {
   useCreateLayoutContext,
   useEnsureTrackRef,
   useGridLayout,
+  useIsEncrypted,
   useRemoteParticipants,
   useRoomContext,
   useTracks,
@@ -119,13 +123,13 @@ function FunnyGridLayout({ tracks, children }: FunnyGridLayoutProps) {
 function FunnyParticipantTile({
   filtersByParticipant,
   defaultIntensity,
-  onOpenFilterPanelForParticipant,
 }: {
   filtersByParticipant: Record<string, { filter: FilterType; intensity: number }>;
   defaultIntensity: number;
-  onOpenFilterPanelForParticipant: (identity: string) => void;
+  onOpenFilterPanelForParticipant?: (identity: string) => void;
 }) {
   const trackRef = useEnsureTrackRef();
+  const isEncrypted = useIsEncrypted(trackRef.participant);
   const isCamera = isTrackReference(trackRef) && trackRef.source === Track.Source.Camera;
 
   if (isCamera) {
@@ -141,51 +145,25 @@ function FunnyParticipantTile({
           activeFilter={tileFilter}
           filterIntensity={tileIntensity}
         />
-        <div className="lk-participant-metadata">
+        <div className="lk-participant-placeholder">
+          <ParticipantPlaceholder />
+        </div>
+        <div className="lk-participant-metadata" style={{ zIndex: 10 }}>
           <div className="lk-participant-metadata-item">
+            {isEncrypted && <LockLockedIcon style={{ marginRight: '0.25rem' }} />}
             <TrackMutedIndicator
               trackRef={{
                 participant: trackRef.participant,
                 source: Track.Source.Microphone,
               }}
+              show={'muted'}
             />
             <ParticipantName />
           </div>
 
-          {/* First-class native-styled effect badge */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenFilterPanelForParticipant(identity);
-            }}
-            title={`Configure face effects for ${trackRef.participant.name || (trackRef.participant.isLocal ? 'myself' : 'friend')}`}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '5px',
-              flexShrink: 0,
-              whiteSpace: 'nowrap',
-              backgroundColor: tileFilter !== 'none' ? 'var(--lk-accent-bg, #1f8cf9)' : 'var(--lk-control-bg, rgba(0, 0, 0, 0.55))',
-              border: tileFilter !== 'none' ? '1px solid var(--lk-accent-bg, #1f8cf9)' : '1px solid var(--lk-border-color, rgba(255, 255, 255, 0.18))',
-              borderRadius: 'var(--lk-border-radius, 6px)',
-              padding: '2px 8px',
-              color: '#fff',
-              fontSize: '11px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              pointerEvents: 'auto',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <span>{FILTER_ICONS[tileFilter]}</span>
-            <span>{tileFilter === 'none' ? 'Effects' : FILTER_LABELS[tileFilter]}</span>
-          </button>
-
           <ConnectionQualityIndicator className="lk-participant-metadata-item" />
         </div>
+        <FocusToggle trackRef={trackRef} />
       </ParticipantTile>
     );
   }
